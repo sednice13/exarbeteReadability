@@ -2,57 +2,57 @@ import Queue from '../../../data-structures/queue/Queue';
 
 /**
  * @typedef {Object} Callbacks
- * @property {function(node: BinaryTreeNode, child: BinaryTreeNode): boolean} allowTraversal -
+ * @property {function(node: BinaryTreeNode, child: BinaryTreeNode): boolean} allowTraversal - 
  *   Determines whether DFS should traverse from the node to its child.
  * @property {function(node: BinaryTreeNode)} enterNode - Called when DFS enters the node.
  * @property {function(node: BinaryTreeNode)} leaveNode - Called when DFS leaves the node.
  */
 
 /**
- * @param {Callbacks} [callbacks]
+ * Initializes default callbacks if they are not provided.
+ *
+ * @param {Callbacks} [callbacks={}]
  * @returns {Callbacks}
  */
 function initCallbacks(callbacks = {}) {
-  const initiatedCallback = callbacks;
-
-  const stubCallback = () => {};
-  const defaultAllowTraversal = () => true;
-
-  initiatedCallback.allowTraversal = callbacks.allowTraversal || defaultAllowTraversal;
-  initiatedCallback.enterNode = callbacks.enterNode || stubCallback;
-  initiatedCallback.leaveNode = callbacks.leaveNode || stubCallback;
-
-  return initiatedCallback;
+  return {
+    allowTraversal: callbacks.allowTraversal || (() => true),
+    enterNode: callbacks.enterNode || (() => {}),
+    leaveNode: callbacks.leaveNode || (() => {}),
+  };
 }
 
 /**
- * @param {BinaryTreeNode} rootNode
- * @param {Callbacks} [originalCallbacks]
+ * Performs a breadth-first search (BFS) on a binary tree.
+ *
+ * @param {BinaryTreeNode} rootNode - The starting node of the BFS traversal.
+ * @param {Callbacks} [originalCallbacks] - Optional callbacks for traversal behavior.
  */
 export default function breadthFirstSearch(rootNode, originalCallbacks) {
+  if (!rootNode) return;
+
   const callbacks = initCallbacks(originalCallbacks);
-  const nodeQueue = new Queue();
+  const queue = new Queue();
 
-  // Do initial queue setup.
-  nodeQueue.enqueue(rootNode);
+  queue.enqueue(rootNode);
 
-  while (!nodeQueue.isEmpty()) {
-    const currentNode = nodeQueue.dequeue();
+  while (!queue.isEmpty()) {
+    const node = queue.dequeue();
+    callbacks.enterNode(node);
 
-    callbacks.enterNode(currentNode);
+    /**
+     * Enqueues a child node if it exists and traversal is allowed.
+     * @param {BinaryTreeNode} childNode
+     */
+    const enqueueChild = (childNode) => {
+      if (childNode && callbacks.allowTraversal(node, childNode)) {
+        queue.enqueue(childNode);
+      }
+    };
 
-    // Add all children to the queue for future traversals.
+    enqueueChild(node.left);
+    enqueueChild(node.right);
 
-    // Traverse left branch.
-    if (currentNode.left && callbacks.allowTraversal(currentNode, currentNode.left)) {
-      nodeQueue.enqueue(currentNode.left);
-    }
-
-    // Traverse right branch.
-    if (currentNode.right && callbacks.allowTraversal(currentNode, currentNode.right)) {
-      nodeQueue.enqueue(currentNode.right);
-    }
-
-    callbacks.leaveNode(currentNode);
+    callbacks.leaveNode(node);
   }
 }
