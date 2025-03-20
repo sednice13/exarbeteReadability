@@ -2,57 +2,61 @@ import Queue from '../../../data-structures/queue/Queue';
 
 /**
  * @typedef {Object} Callbacks
- * @property {function(node: BinaryTreeNode, child: BinaryTreeNode): boolean} allowTraversal - 
- *   Determines whether DFS should traverse from the node to its child.
- * @property {function(node: BinaryTreeNode)} enterNode - Called when DFS enters the node.
- * @property {function(node: BinaryTreeNode)} leaveNode - Called when DFS leaves the node.
+ * @property {function(node: BinaryTreeNode, child: BinaryTreeNode): boolean} allowTraversal -
+ *   Determines whether BFS should traverse from the node to its child.
+ * @property {function(node: BinaryTreeNode)} enterNode - Called when BFS enters the node.
+ * @property {function(node: BinaryTreeNode)} leaveNode - Called when BFS leaves the node.
  */
 
 /**
- * Initializes default callbacks if they are not provided.
- *
- * @param {Callbacks} [callbacks={}]
- * @returns {Callbacks}
+ * Initializes the callbacks for BFS traversal.
+ * @param {Callbacks} [callbacks={}] - The callbacks to initialize.
+ * @returns {Callbacks} - The initialized callbacks.
  */
 function initCallbacks(callbacks = {}) {
-  return {
-    allowTraversal: callbacks.allowTraversal || (() => true),
-    enterNode: callbacks.enterNode || (() => {}),
-    leaveNode: callbacks.leaveNode || (() => {}),
-  };
+  const {
+    allowTraversal = () => true,
+    enterNode = () => {},
+    leaveNode = () => {},
+  } = callbacks;
+
+  return { allowTraversal, enterNode, leaveNode };
 }
 
 /**
- * Performs a breadth-first search (BFS) on a binary tree.
- *
- * @param {BinaryTreeNode} rootNode - The starting node of the BFS traversal.
- * @param {Callbacks} [originalCallbacks] - Optional callbacks for traversal behavior.
+ * Enqueues the child node if traversal is allowed.
+ * @param {Queue} queue - The queue to enqueue the child node.
+ * @param {BinaryTreeNode} parentNode - The parent node.
+ * @param {BinaryTreeNode} childNode - The child node.
+ * @param {Callbacks} callbacks - The callbacks to check if traversal is allowed.
  */
-export default function breadthFirstSearch(rootNode, originalCallbacks) {
-  if (!rootNode) return;
+function enqueueChildIfAllowed(queue, parentNode, childNode, callbacks) {
+  if (childNode && callbacks.allowTraversal(parentNode, childNode)) {
+    queue.enqueue(childNode);
+  }
+}
 
+/**
+ * Performs Breadth-First Search (BFS) on a binary tree.
+ * @param {BinaryTreeNode} rootNode - The root node of the tree.
+ * @param {Callbacks} [originalCallbacks={}] - The callbacks for BFS traversal.
+ */
+export default function breadthFirstSearch(rootNode, originalCallbacks = {}) {
   const callbacks = initCallbacks(originalCallbacks);
-  const queue = new Queue();
+  const nodeQueue = new Queue();
 
-  queue.enqueue(rootNode);
+  // Start BFS from the root node.
+  nodeQueue.enqueue(rootNode);
 
-  while (!queue.isEmpty()) {
-    const node = queue.dequeue();
-    callbacks.enterNode(node);
+  while (!nodeQueue.isEmpty()) {
+    const currentNode = nodeQueue.dequeue();
 
-    /**
-     * Enqueues a child node if it exists and traversal is allowed.
-     * @param {BinaryTreeNode} childNode
-     */
-    const enqueueChild = (childNode) => {
-      if (childNode && callbacks.allowTraversal(node, childNode)) {
-        queue.enqueue(childNode);
-      }
-    };
+    callbacks.enterNode(currentNode);
 
-    enqueueChild(node.left);
-    enqueueChild(node.right);
+    // Enqueue left and right children if traversal is allowed.
+    enqueueChildIfAllowed(nodeQueue, currentNode, currentNode.left, callbacks);
+    enqueueChildIfAllowed(nodeQueue, currentNode, currentNode.right, callbacks);
 
-    callbacks.leaveNode(node);
+    callbacks.leaveNode(currentNode);
   }
 }
